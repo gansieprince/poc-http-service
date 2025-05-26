@@ -1,7 +1,7 @@
 product     = "http"
 env         = "dev"
 region      = "eu-west-1"
-domain_name = "poc-http.labs.ayoba.me"  # Replace with your actual domain name
+domain_name = "poc-http.labs.com"  # Replace with your actual domain name
 stack       = "http"
 HostedZoneId = "XDSRWEANSG"  # Example Hosted Zone ID, replace with your actual ID
 
