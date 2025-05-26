@@ -3,6 +3,8 @@
 
 This project provisions a secure, scalable three-tier AWS infrastructure using Terraform. It includes a VPC with public and private subnets, ECS Fargate tasks, an Application Load Balancer (ALB), NAT Gateway, RDS PostgreSQL database, and integrations with DynamoDB, Amazon SQS, and ECR.
 
+This is a HTTP implemnetation in a Dev environment, for production a TLS certicate (HTTPS) would be attached to the ALB for TLS offloading. 
+
 ---
 
 ## 📐 Architecture Overview
