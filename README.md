@@ -17,6 +17,8 @@ This is a HTTP implemnetation in a Dev environment, for production a TLS certica
 ### 🌐 Networking
 - **Internet Gateway (IGW)** attached to the VPC for outbound internet access from public subnets.
 - **NAT Gateway** deployed in a public subnet to allow private subnets to reach the internet securely.
+- One NAT is deployed for the poc.
+- For best practices two NAT's should be deployed in both public subnets. AWS also charges for cross  (AZ) Data transfer, Ex With one NAT a private instance in AZ1 will have to send internet bound traffic to the NAT in AZ2. This is billed as cross-AZ data transfer costs and can also add latency and a single point of failure where High Availability is needed
 - **Route Tables**:
   - Public route table routes `0.0.0.0/0` traffic to the Internet Gateway.
   - Private route table routes `0.0.0.0/0` to the NAT Gateway.
