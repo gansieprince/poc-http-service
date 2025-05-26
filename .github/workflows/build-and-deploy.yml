@@ -1,0 +1,95 @@
+name: build-and-deploy
+
+on: workflow_dispatch
+#on:
+#  push:
+#    branches:
+      #- 'develop'
+
+env:
+  AWS_REGION: "eu-west-1"
+  ECS_SERVICE: "frontend-web-service"
+  TASK_DEFINITION: "frontend_app"
+  CONTAINER_NAME: "web-container"
+  ECR_REPOSITORY: "http-offerzen"
+  ECS_CLUSTER: "dev-http-cluster"
+
+jobs:
+  build-and-deploy-http-service:
+    name: Build and Deploy
+    runs-on: ubuntu-latest
+    outputs:
+      sha: ${{ steps.vars.outputs.sha_short }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Set Git Hash
+        run: echo "GIT_SHORT_HASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+
+      - name: Set ENV Variables dev
+        if: endsWith(github.ref, '/develop')
+        run: |
+          echo "ENV=dev" >> $GITHUB_ENV
+          echo "AWS_ACCOUNT_ID=${{ secrets.STG_AWS_ACCOUNT_ID }}" >> $GITHUB_ENV
+          echo "AWS_ACCESS_KEY_ID=${{ secrets.STG_AWS_ACCESS_KEY_ID }}" >> $GITHUB_ENV
+          echo "AWS_SECRET_ACCESS_KEY=${{ secrets.STG_AWS_SECRET_ACCESS_KEY }}" >> $GITHUB_ENV
+      
+
+      - name: Build and Push Docker Image
+        id: docker
+        uses: mr-smithers-excellent/docker-build-push@v5
+        with:
+          image: ${{ env.ENV }}-${{ env.ECR_REPOSITORY }}
+          registry: ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com
+          tags: ${{ env.GIT_SHORT_HASH }}, latest_${{ env.VERSION }}
+          directory: http-service-app
+          dockerfile: http-service-app/Dockerfile
+
+      - name: Download Task Definition
+        run: aws ecs describe-task-definition --task-definition ${{ env.TASK_DEFINITION }}  --query taskDefinition > task-definition.json
+
+      - name: Fill in the new image ID in the Amazon ECS Task Definition
+        id: task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-definition.json
+          container-name: ${{ env.CONTAINER_NAME }}
+          image: ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ENV }}-${{ env.ECR_REPOSITORY }}:${{ env.GIT_SHORT_HASH }}
+
+      - name: Show Task Definition to Deploy
+        run: cat ${{ steps.task-def.outputs.task-definition }}
+
+      - name: Deploy Amazon ECS task definition
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.task-def.outputs.task-definition }}
+          service: ${{ env.ECS_SERVICE }}
+          cluster: ${{ env.ECS_CLUSTER }}
+          wait-for-service-stability: true
+
+      - name: Check location
+        run:  pwd && ls -la
+      - name: Script exectuble permission
+        run:  chmod +x ./http-service-app/scripts/healthcheck.sh
+      - name: Health Check
+        run: ./http-service-app/scripts/healthcheck.sh
+
+      # - name: Slack Notification
+      #   if: success()
+      #   uses: rtCamp/action-slack-notify@v2
+      #   env:
+      #     SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+      #     SLACK_USERNAME: DeployNotification
+      #     SLACK_MESSAGE: 'Deployment success in ${{ env.ENV }} for ${{ env.ECS_SERVICE }}'
+      #     SLACK_COLOR: ${{job.status}}
+
+      # - name: Slack Notification
+      #   if: failure()
+      #   uses: rtCamp/action-slack-notify@v2
+      #   env:
+      #     SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+      #     SLACK_USERNAME: DeployNotification
+      #     # SLACK_MESSAGE: 'Deployment error in ${{ env.ENV }} for ${{ env.ECS_SERVICE }}'
+      #     # SLACK_COLOR: ${{job.status}}

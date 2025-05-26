@@ -1,0 +1,48 @@
+name: Terraform CI
+
+on: workflow_dispatch
+#on:
+#  push:
+#    branches: [main]
+#  pull_request:
+#    branches: [main]
+
+jobs:
+  terraform:
+    name: Terraform in terraform/ folder
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: terraform
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.7.5
+
+      - name: Terraform Init
+        run: terraform init
+        env:
+          TERRAFORM_CLOUD_TOKEN: ${{ secrets.TFC_TOKEN }}
+
+      - name: Terraform Format Check
+        run: terraform fmt -check
+
+      - name: Terraform Validate
+        run: terraform validate
+
+      - name: Terraform Plan
+        run: terraform plan -out=tfplan
+        env:
+          TERRAFORM_CLOUD_TOKEN: ${{ secrets.TFC_TOKEN }}
+
+ #     - name: Terraform Apply
+ #       if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+ #       run: terraform apply -var-file="envs/dev.tfvars -auto-approve tfplan
+ #       env:
+ #         TERRAFORM_CLOUD_TOKEN: ${{ secrets.TFC_TOKEN }}
