@@ -40,6 +40,12 @@ This is a HTTP implemnetation in a Dev environment, for production a TLS certica
 
 ---
 
+### Cloudwatch log group and alarm with SNS topic
+ - Cloudatch log group for the ecs service to store logs
+ - Cloudwatch alarm that monitor RDS cluster for CPU usage and a alarm that monitors SQS Queue.
+ - SNS topic that sends a email when cloudwatch alerts are triggered.
+   
+
 ## 🔒 Security
 - ECS tasks and RDS use tightly-scoped **IAM roles** and **security groups** to enforce the principle of least privilege.
 - All traffic is segmented by subnet and routing logic to control data flow.
