@@ -35,6 +35,14 @@ jobs:
 
       - name: Terraform Validate
         run: terraform validate
+ 
+      - name: Install TFLint
+        run: |
+          curl -s https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
+          tflint --init
+
+      - name: Terraform Lint
+        run: tflint --recursive
 
       - name: Terraform Plan
         run: terraform plan -out=tfplan
